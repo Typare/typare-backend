@@ -1,14 +1,28 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 app = FastAPI()
 
+# Modello dati per la dettatura
+class Dictation(BaseModel):
+    text: str
+
+# Buffer in memoria (fondamenta)
+BUFFER = []
+
 @app.get("/")
 def root():
-    return {"status": "Typare minimal OK"}
+    return {"status": "Typare live – foundations OK"}
 
 @app.get("/health")
 def health():
     return {"ok": True}
-@app.get("/test")
-def test():
-    return {"test": "ok"}
+
+# Primo comportamento reale di Typare
+@app.post("/dictate")
+def dictate(data: Dictation):
+    BUFFER.append(data.text)
+    return {
+        "message": "Text received",
+        "buffer": BUFFER
+    }
