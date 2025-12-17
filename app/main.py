@@ -26,3 +26,8 @@ def dictate(data: Dictation):
         "message": "Text received",
         "buffer": BUFFER
     }
+@app.get("/buffer")
+def read_buffer():
+    return {
+        "buffer": BUFFER
+    }
