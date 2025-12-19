@@ -31,3 +31,6 @@ def read_buffer():
     return {
         "buffer": BUFFER
     }
+@app.post("/mock/transcribe")
+async def mock_transcribe():
+    return {"text": "TEST DI TRASCRIZIONE OK"}
