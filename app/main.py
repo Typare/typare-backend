@@ -37,4 +37,11 @@ async def mock_transcribe_get():
 from fastapi.staticfiles import StaticFiles
 from fastapi.staticfiles import StaticFiles
 app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
+from fastapi import UploadFile, File
+
+@app.post("/transcribe")
+async def transcribe(file: UploadFile = File(...)):
+    # TEMPORANEO: restituiamo testo fisso per verificare il wiring
+    return {"text": "TRASCRIZIONE REALE COLLEGATA"}
+
 
