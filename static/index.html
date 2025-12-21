@@ -25,6 +25,10 @@
     <button id="delWord">Cancella parola</button> 
     <button id="replaceWord">Sostituisci parola</button> 
     <button id="synonym">Sinonimo</button>
+   <hr>
+<h3>Whisper test (audio reale)</h3>
+<input type="file" id="audioFile" accept="audio/*">
+<button id="sendAudio">Invia audio a Whisper</button> 
    </div>
 
   <div class="box">
@@ -158,6 +162,26 @@ document.getElementById('synonym').onclick = () => {
   buffer += (buffer ? ' ' : '') + j.text;
   render();
 };
+    document.getElementById('sendAudio').onclick = async () => {
+  const fileInput = document.getElementById('audioFile');
+  if (!fileInput.files.length) {
+    alert('Seleziona un file audio');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+
+  const r = await fetch('/transcribe/audio', {
+    method: 'POST',
+    body: formData
+  });
+
+  const j = await r.json();
+  buffer += (buffer ? ' ' : '') + (j.text || '[nessun testo]');
+  render();
+};
+
    render();
   </script>
 </body>
