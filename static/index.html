@@ -2,19 +2,92 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Typare UI Test</title>
+  <title>Typare – UI Test v1</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    button { margin: 6px 6px 6px 0; padding: 8px 12px; }
+    .box { border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
+    .label { font-weight: bold; }
+    .muted { color: #666; }
+  </style>
 </head>
 <body>
-  <h1>Typare – UI Test</h1>
-  <button id="btn">Microfono (mock)</button>
-  <pre id="out"></pre>
+  <h1>Typare – UI Test v1</h1>
+
+  <div>
+    <button id="listen">Ascolta (mock)</button>
+    <button id="punto">Punto</button>
+    <button id="stop">Stop</button>
+    <button id="continua">Continua</button>
+    <button id="rileggi">Rileggi</button>
+  </div>
+
+  <div class="box">
+    <div class="label">Stato</div>
+    <div id="state" class="muted">ASCOLTO</div>
+  </div>
+
+  <div class="box">
+    <div class="label">Buffer (frase in corso)</div>
+    <div id="buffer"></div>
+  </div>
+
+  <div class="box">
+    <div class="label">Testo finale</div>
+    <div id="final"></div>
+  </div>
 
   <script>
-    document.getElementById('btn').onclick = async () => {
+    // Stato semplice lato UI (per test flusso)
+    let state = 'ASCOLTO'; // ASCOLTO | REVISIONE
+    let buffer = '';
+    let finalText = '';
+
+    const elState = document.getElementById('state');
+    const elBuffer = document.getElementById('buffer');
+    const elFinal = document.getElementById('final');
+
+    function render() {
+      elState.textContent = state;
+      elBuffer.textContent = buffer;
+      elFinal.textContent = finalText;
+    }
+
+    // Mock "Ascolta": chiede al backend una frase finta
+    document.getElementById('listen').onclick = async () => {
+      if (state !== 'ASCOLTO') return;
       const r = await fetch('/mock/transcribe');
       const j = await r.json();
-      document.getElementById('out').textContent = j.text;
+      buffer += (buffer ? ' ' : '') + j.text;
+      render();
     };
+
+    // Punto: chiude il segmento
+    document.getElementById('punto').onclick = () => {
+      if (state !== 'ASCOLTO' || !buffer) return;
+      finalText += (finalText ? ' ' : '') + buffer + '.';
+      buffer = '';
+      render();
+    };
+
+    // Stop: entra in revisione
+    document.getElementById('stop').onclick = () => {
+      state = 'REVISIONE';
+      render();
+    };
+
+    // Continua: torna ad ascolto
+    document.getElementById('continua').onclick = () => {
+      state = 'ASCOLTO';
+      render();
+    };
+
+    // Rileggi: per ora evidenzia (mock TTS)
+    document.getElementById('rileggi').onclick = () => {
+      alert(finalText || '(niente da rileggere)');
+    };
+
+    render();
   </script>
 </body>
 </html>
