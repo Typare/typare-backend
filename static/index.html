@@ -22,6 +22,7 @@
     <button id="rileggi">Rileggi</button>
     <button id="delSentence">Cancella frase</button>
     <button id="delWord">Cancella parola</button> 
+    <button id="replaceWord">Sostituisci parola</button> 
   </div>
 
   <div class="box">
@@ -105,9 +106,19 @@
   }
   render();
 };
+    // Sostituisci ultima parola
+    document.getElementById('replaceWord').onclick = () => {
+    const newWord = prompt('Nuova parola:');
+    if (!newWord) return;
 
-
-    render();
+    if (buffer) {
+    buffer = buffer.trim().replace(/\S+$/, newWord);
+  } else if (finalText) {
+    finalText = finalText.trim().replace(/\S+(\.?$)/, newWord + '$1');
+  }
+  render();
+};
+   render();
   </script>
 </body>
 </html>
