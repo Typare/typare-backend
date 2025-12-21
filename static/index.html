@@ -20,6 +20,8 @@
     <button id="stop">Stop</button>
     <button id="continua">Continua</button>
     <button id="rileggi">Rileggi</button>
+    <button id="delSentence">Cancella frase</button>
+    <button id="delWord">Cancella parola</button> 
   </div>
 
   <div class="box">
@@ -86,6 +88,24 @@
     document.getElementById('rileggi').onclick = () => {
       alert(finalText || '(niente da rileggere)');
     };
+    // Cancella ultima frase (dal testo finale)
+    document.getElementById('delSentence').onclick = () => {
+    if (!finalText) return;
+    // rimuove l'ultima frase terminata da punto
+    finalText = finalText.trim().replace(/[^.]+\.?$/, '').trim();
+    render();
+   };
+
+    // Cancella ultima parola (dal buffer se c'è, altrimenti dal testo finale)
+    document.getElementById('delWord').onclick = () => {
+    if (buffer) {
+    buffer = buffer.trim().replace(/\s*\S+$/, '');
+  } else if (finalText) {
+    finalText = finalText.trim().replace(/\s*\S+\.?$/, '');
+  }
+  render();
+};
+
 
     render();
   </script>
