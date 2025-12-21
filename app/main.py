@@ -62,13 +62,17 @@ async def transcribe_audio(file: UploadFile = File(...)):
         tmp.write(content)
         tmp_path = tmp.name
 
-    # chiamata Whisper
+    # chiamata Whisper (form-data corretto)
     url = "https://api.openai.com/v1/audio/transcriptions"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
-    files = {
-        "file": (os.path.basename(tmp_path), open(tmp_path, "rb")),
-        "model": (None, "whisper-1"),
-    }
+
+    with open(tmp_path, "rb") as f:
+        files = {
+            "file": (os.path.basename(tmp_path), f, "application/octet-stream"),
+        }
+        data = {
+            "model": "whisper-1"
+        }
 
     async with httpx.AsyncClient(timeout=120) as client:
         r = await client.post(url, headers=headers, files=files)
