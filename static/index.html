@@ -65,7 +65,7 @@
     // Punto: chiude il segmento
     document.getElementById('punto').onclick = () => {
       if (state !== 'ASCOLTO' || !buffer) return;
-      finalText += (finalText ? ' ' : '') + buffer + '.';
+      finalText += (finalText ? ' ' : '') + buffer.trim() + '.';
       buffer = '';
       render();
     };
