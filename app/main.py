@@ -34,3 +34,5 @@ def read_buffer():
 @app.get("/mock/transcribe")
 async def mock_transcribe_get():
     return {"text": "TEST DI TRASCRIZIONE OK"}
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
