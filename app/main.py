@@ -43,4 +43,38 @@ from fastapi import UploadFile, File
 async def transcribe():
     return {"text": "TRASCRIZIONE REALE COLLEGATA"}
 
+from fastapi import UploadFile, File
+import tempfile
+import os
+import httpx
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+@app.post("/transcribe/audio")
+async def transcribe_audio(file: UploadFile = File(...)):
+    if not OPENAI_API_KEY:
+        return {"text": "ERRORE: OPENAI_API_KEY mancante"}
+
+    # salva audio temporaneo
+    suffix = os.path.splitext(file.filename)[1] or ".wav"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    # chiamata Whisper
+    url = "https://api.openai.com/v1/audio/transcriptions"
+    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
+    files = {
+        "file": (os.path.basename(tmp_path), open(tmp_path, "rb")),
+        "model": (None, "whisper-1"),
+    }
+
+    async with httpx.AsyncClient(timeout=120) as client:
+        r = await client.post(url, headers=headers, files=files)
+
+    os.unlink(tmp_path)
+
+    r.raise_for_status()
+    return r.json()
 
