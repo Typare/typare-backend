@@ -149,6 +149,13 @@ document.getElementById('synonym').onclick = () => {
   }
   render();
 };
+// Ascolta reale (wire test)
+document.getElementById('listenReal').onclick = async () => {
+  const r = await fetch('/transcribe', { method: 'POST' });
+  const j = await r.json();
+  buffer += (buffer ? ' ' : '') + j.text;
+  render();
+};
 
   render();
   </script>
