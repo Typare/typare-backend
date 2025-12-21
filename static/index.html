@@ -23,7 +23,8 @@
     <button id="delSentence">Cancella frase</button>
     <button id="delWord">Cancella parola</button> 
     <button id="replaceWord">Sostituisci parola</button> 
-  </div>
+    <button id="synonym">Sinonimo</button>
+   </div>
 
   <div class="box">
     <div class="label">Stato</div>
@@ -118,8 +119,37 @@
   }
   render();
 };
-    
-   render();
+    // Sinonimo (mock)
+document.getElementById('synonym').onclick = () => {
+  const synonyms = {
+    'ok': ['bene', 'perfetto'],
+    'calmo': ['tranquillo', 'sereno'],
+    'mare': ['oceano', 'acqua'],
+    'test': ['prova', 'verifica']
+  };
+
+  const applySynonym = (text) => {
+    const words = text.trim().split(/\s+/);
+    const last = words[words.length - 1].replace(/\.$/, '');
+    const list = synonyms[last.toLowerCase()];
+    if (!list) {
+      alert('Nessun sinonimo (mock)');
+      return text;
+    }
+    const choice = list[0]; // primo per ora
+    words[words.length - 1] = choice;
+    return words.join(' ') + (text.endsWith('.') ? '.' : '');
+  };
+
+  if (buffer) {
+    buffer = applySynonym(buffer);
+  } else if (finalText) {
+    finalText = applySynonym(finalText);
+  }
+  render();
+};
+
+  render();
   </script>
 </body>
 </html>
