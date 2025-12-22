@@ -68,9 +68,9 @@ async def transcribe_audio(file: UploadFile = File(...)):
         "Authorization": f"Bearer {OPENAI_API_KEY}"
     }
 
-    with open(tmp_path, "rb") as f:
+        with open(tmp_path, "rb") as f:
         files = {
-            "file": f
+            "file": (os.path.basename(tmp_path), f)
         }
         data = {
             "model": "whisper-1"
