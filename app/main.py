@@ -1,15 +1,30 @@
-from fastapi import FastAPI
+import os
+import tempfile
+
+from fastapi import FastAPI, UploadFile, File
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from openai import OpenAI
 
 app = FastAPI()
 
+# =========================
+# OpenAI client (SDK)
+# =========================
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# =========================
 # Modello dati per la dettatura
+# =========================
 class Dictation(BaseModel):
     text: str
 
 # Buffer in memoria (fondamenta)
 BUFFER = []
 
+# =========================
+# Endpoints base
+# =========================
 @app.get("/")
 def root():
     return {"status": "Typare live – foundations OK"}
@@ -18,7 +33,9 @@ def root():
 def health():
     return {"ok": True}
 
-# Primo comportamento reale di Typare
+# =========================
+# Dictation base
+# =========================
 @app.post("/dictate")
 def dictate(data: Dictation):
     BUFFER.append(data.text)
@@ -26,67 +43,50 @@ def dictate(data: Dictation):
         "message": "Text received",
         "buffer": BUFFER
     }
+
 @app.get("/buffer")
 def read_buffer():
-    return {
-        "buffer": BUFFER
-    }
+    return {"buffer": BUFFER}
+
+# =========================
+# Mock transcription
+# =========================
 @app.get("/mock/transcribe")
 async def mock_transcribe_get():
     return {"text": "TEST DI TRASCRIZIONE OK"}
-from fastapi.staticfiles import StaticFiles
-from fastapi.staticfiles import StaticFiles
-app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
-from fastapi import UploadFile, File
 
+# =========================
+# UI statica
+# =========================
+app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
+
+# =========================
+# Wire test (reale, senza audio)
+# =========================
 @app.post("/transcribe")
 async def transcribe():
     return {"text": "TRASCRIZIONE REALE COLLEGATA"}
 
-from fastapi import UploadFile, File
-import tempfile
-import os
-import httpx
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
+# =========================
+# Whisper reale via SDK OpenAI
+# =========================
 @app.post("/transcribe/audio")
 async def transcribe_audio(file: UploadFile = File(...)):
-    import tempfile
-    import os
-    import httpx
-
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    if not OPENAI_API_KEY:
+    if not os.getenv("OPENAI_API_KEY"):
         return {"text": "ERRORE: OPENAI_API_KEY mancante"}
 
+    # salva audio temporaneo
     suffix = os.path.splitext(file.filename)[1] or ".wav"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        content = await file.read()
-        tmp.write(content)
+        tmp.write(await file.read())
         tmp_path = tmp.name
 
-    url = "https://api.openai.com/v1/audio/transcriptions"
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}"
-    }
-
-    with open(tmp_path, "rb") as f:
-        files = {
-            "file": (os.path.basename(tmp_path), f)
-        }
-        data = {
-            "model": "whisper-1"
-        }
-
-        async with httpx.AsyncClient(timeout=120) as client:
-            r = await client.post(
-                url,
-                headers=headers,
-                data=data,
-                files=files
-            )
+    # chiamata Whisper tramite SDK ufficiale
+    with open(tmp_path, "rb") as audio_file:
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file
+        )
 
     os.unlink(tmp_path)
-    r.raise_for_status()
-    return r.json()
+    return {"text": transcript.text}
