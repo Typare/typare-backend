@@ -82,7 +82,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
                 headers=headers,
                 data=data,
                 files=files
-
+            )
 
     os.unlink(tmp_path)
 
