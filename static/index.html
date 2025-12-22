@@ -180,6 +180,39 @@ document.getElementById('synonym').onclick = () => {
   const j = await r.json();
   buffer += (buffer ? ' ' : '') + (j.text || '[nessun testo]');
   render();
+     <script>
+let mediaRecorder;
+let audioChunks = [];
+
+document.getElementById('listenReal').onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+  audioChunks = [];
+
+  mediaRecorder.ondataavailable = e => {
+    audioChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = async () => {
+    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'recording.wav');
+
+    const r = await fetch('/transcribe/audio', {
+      method: 'POST',
+      body: formData
+    });
+
+    const j = await r.json();
+    buffer += (buffer ? ' ' : '') + j.text;
+    render();
+  };
+
+  mediaRecorder.start();
+  setTimeout(() => mediaRecorder.stop(), 4000); // 4 secondi
+};
+</script>
+ 
 };
 
    render();
