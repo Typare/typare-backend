@@ -52,23 +52,26 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 @app.post("/transcribe/audio")
 async def transcribe_audio(file: UploadFile = File(...)):
+    import tempfile
+    import os
+    import httpx
+
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     if not OPENAI_API_KEY:
         return {"text": "ERRORE: OPENAI_API_KEY mancante"}
 
-    # salva audio temporaneo
     suffix = os.path.splitext(file.filename)[1] or ".wav"
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         content = await file.read()
         tmp.write(content)
         tmp_path = tmp.name
 
-    # chiamata Whisper (form-data corretto)
-        url = "https://api.openai.com/v1/audio/transcriptions"
+    url = "https://api.openai.com/v1/audio/transcriptions"
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}"
     }
 
-        with open(tmp_path, "rb") as f:
+    with open(tmp_path, "rb") as f:
         files = {
             "file": (os.path.basename(tmp_path), f)
         }
@@ -85,7 +88,5 @@ async def transcribe_audio(file: UploadFile = File(...)):
             )
 
     os.unlink(tmp_path)
-
     r.raise_for_status()
     return r.json()
-
