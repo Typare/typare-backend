@@ -11,6 +11,7 @@
     .muted { color: #666; }
   </style>
 </head>
+
 <body>
   <h1>Typare – UI Test v1</h1>
 
@@ -22,14 +23,10 @@
     <button id="continua">Continua</button>
     <button id="rileggi">Rileggi</button>
     <button id="delSentence">Cancella frase</button>
-    <button id="delWord">Cancella parola</button> 
-    <button id="replaceWord">Sostituisci parola</button> 
+    <button id="delWord">Cancella parola</button>
+    <button id="replaceWord">Sostituisci parola</button>
     <button id="synonym">Sinonimo</button>
-   <hr>
-<h3>Whisper test (audio reale)</h3>
-<input type="file" id="audioFile" accept="audio/*">
-<button id="sendAudio">Invia audio a Whisper</button> 
-   </div>
+  </div>
 
   <div class="box">
     <div class="label">Stato</div>
@@ -47,8 +44,10 @@
   </div>
 
   <script>
-    // Stato semplice lato UI (per test flusso)
-    let state = 'ASCOLTO'; // ASCOLTO | REVISIONE
+    /* =====================
+       Stato UI
+    ===================== */
+    let state = 'ASCOLTO';
     let buffer = '';
     let finalText = '';
 
@@ -62,7 +61,9 @@
       elFinal.textContent = finalText;
     }
 
-    // Mock "Ascolta": chiede al backend una frase finta
+    /* =====================
+       MOCK ASCOLTO
+    ===================== */
     document.getElementById('listen').onclick = async () => {
       if (state !== 'ASCOLTO') return;
       const r = await fetch('/mock/transcribe');
@@ -71,151 +72,91 @@
       render();
     };
 
-    // Punto: chiude il segmento
+    /* =====================
+       PUNTO
+    ===================== */
     document.getElementById('punto').onclick = () => {
-      if (state !== 'ASCOLTO' || !buffer) return;
+      if (!buffer) return;
       finalText += (finalText ? ' ' : '') + buffer.trim() + '.';
       buffer = '';
       render();
     };
 
-    // Stop: entra in revisione
     document.getElementById('stop').onclick = () => {
       state = 'REVISIONE';
       render();
     };
 
-    // Continua: torna ad ascolto
     document.getElementById('continua').onclick = () => {
       state = 'ASCOLTO';
       render();
     };
 
-    // Rileggi: per ora evidenzia (mock TTS)
     document.getElementById('rileggi').onclick = () => {
       alert(finalText || '(niente da rileggere)');
     };
-    // Cancella ultima frase (dal testo finale)
+
     document.getElementById('delSentence').onclick = () => {
-    if (!finalText) return;
-    // rimuove l'ultima frase terminata da punto
-    finalText = finalText.trim().replace(/[^.]+\.?$/, '').trim();
-    render();
-   };
+      finalText = finalText.replace(/[^.]+\.?$/, '').trim();
+      render();
+    };
 
-    // Cancella ultima parola (dal buffer se c'è, altrimenti dal testo finale)
     document.getElementById('delWord').onclick = () => {
-    if (buffer) {
-    buffer = buffer.trim().replace(/\s*\S+$/, '');
-  } else if (finalText) {
-    finalText = finalText.trim().replace(/\s*\S+\.?$/, '');
-  }
-  render();
-};
-    // Sostituisci ultima parola
+      if (buffer) {
+        buffer = buffer.replace(/\s*\S+$/, '');
+      } else {
+        finalText = finalText.replace(/\s*\S+\.?$/, '');
+      }
+      render();
+    };
+
     document.getElementById('replaceWord').onclick = () => {
-    const newWord = prompt('Nuova parola:');
-    if (!newWord) return;
+      const newWord = prompt('Nuova parola:');
+      if (!newWord) return;
+      if (buffer) {
+        buffer = buffer.replace(/\S+$/, newWord);
+      } else {
+        finalText = finalText.replace(/\S+(\.?$)/, newWord + '$1');
+      }
+      render();
+    };
 
-    if (buffer) {
-    buffer = buffer.trim().replace(/\S+$/, newWord);
-  } else if (finalText) {
-    finalText = finalText.trim().replace(/\S+(\.?$)/, newWord + '$1');
-  }
-  render();
-};
-    // Sinonimo (mock)
-document.getElementById('synonym').onclick = () => {
-  const synonyms = {
-    'ok': ['bene', 'perfetto'],
-    'calmo': ['tranquillo', 'sereno'],
-    'mare': ['oceano', 'acqua'],
-    'test': ['prova', 'verifica']
-  };
+    document.getElementById('synonym').onclick = () => {
+      alert('Sinonimi (mock)');
+    };
 
-  const applySynonym = (text) => {
-    const words = text.trim().split(/\s+/);
-    const last = words[words.length - 1].replace(/\.$/, '');
-    const list = synonyms[last.toLowerCase()];
-    if (!list) {
-      alert('Nessun sinonimo (mock)');
-      return text;
-    }
-    const choice = list[0]; // primo per ora
-    words[words.length - 1] = choice;
-    return words.join(' ') + (text.endsWith('.') ? '.' : '');
-  };
+    /* =====================
+       ASCOLTA REALE (MICROFONO + WHISPER)
+    ===================== */
+    document.getElementById('listenReal').onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      let chunks = [];
 
-  if (buffer) {
-    buffer = applySynonym(buffer);
-  } else if (finalText) {
-    finalText = applySynonym(finalText);
-  }
-  render();
-};
-  // Ascolta reale (wire test)
-  document.getElementById('listenReal').onclick = async () => {
-  const r = await fetch('/transcribe', {
-    method: 'POST'
-  });
-  const j = await r.json();
-  buffer += (buffer ? ' ' : '') + j.text;
-  render();
-};
-    document.getElementById('sendAudio').onclick = async () => {
-  const fileInput = document.getElementById('audioFile');
-  if (!fileInput.files.length) {
-    alert('Seleziona un file audio');
-    return;
-  }
+      recorder.ondataavailable = e => chunks.push(e.data);
 
-  const formData = new FormData();
-  formData.append('file', fileInput.files[0]);
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: chunks[0].type });
+        const formData = new FormData();
+        formData.append('file', blob, 'recording.webm');
 
-  const r = await fetch('/transcribe/audio', {
-    method: 'POST',
-    body: formData
-  });
+        const r = await fetch('/transcribe/audio', {
+          method: 'POST',
+          body: formData
+        });
 
-  const j = await r.json();
-  buffer += (buffer ? ' ' : '') + (j.text || '[nessun testo]');
-  render();
-     <script>
-let mediaRecorder;
-let audioChunks = [];
+        const j = await r.json();
+        if (j.text) {
+          buffer += (buffer ? ' ' : '') + j.text;
+          render();
+        }
+      };
 
-document.getElementById('listenReal').onclick = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  const mediaRecorder = new MediaRecorder(stream);
-  let audioChunks = [];
+      recorder.start();
+      setTimeout(() => recorder.stop(), 4000);
+    };
 
-  mediaRecorder.ondataavailable = e => {
-    audioChunks.push(e.data);
-  };
-
-  mediaRecorder.onstop = async () => {
-    const audioBlob = new Blob(audioChunks, { type: audioChunks[0].type });
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'recording.webm');
-
-    const r = await fetch('/transcribe/audio', {
-      method: 'POST',
-      body: formData
-    });
-
-    const j = await r.json();
-    buffer += (buffer ? ' ' : '') + j.text;
-    render();   // ✅ QUI, DENTRO onstop
-  };
-
-  mediaRecorder.start();
-  setTimeout(() => mediaRecorder.stop(), 4000);
-};
-</script>
- 
-};
-
-   render();
+    render();
   </script>
 </body>
 </html>
