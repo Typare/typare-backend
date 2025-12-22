@@ -186,17 +186,17 @@ let audioChunks = [];
 
 document.getElementById('listenReal').onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-  audioChunks = [];
+  const mediaRecorder = new MediaRecorder(stream);
+  let audioChunks = [];
 
   mediaRecorder.ondataavailable = e => {
     audioChunks.push(e.data);
   };
 
   mediaRecorder.onstop = async () => {
-    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const audioBlob = new Blob(audioChunks, { type: audioChunks[0].type });
     const formData = new FormData();
-    formData.append('file', audioBlob, 'recording.wav');
+    formData.append('file', audioBlob, 'recording.webm');
 
     const r = await fetch('/transcribe/audio', {
       method: 'POST',
@@ -205,11 +205,11 @@ document.getElementById('listenReal').onclick = async () => {
 
     const j = await r.json();
     buffer += (buffer ? ' ' : '') + j.text;
-    render();
+    render();   // ✅ QUI, DENTRO onstop
   };
 
   mediaRecorder.start();
-  setTimeout(() => mediaRecorder.stop(), 4000); // 4 secondi
+  setTimeout(() => mediaRecorder.stop(), 4000);
 };
 </script>
  
