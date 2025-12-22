@@ -70,21 +70,18 @@ async def transcribe_audio(file: UploadFile = File(...)):
 
     with open(tmp_path, "rb") as f:
         files = {
-            "file": (os.path.basename(tmp_path), f, "audio/wav"),
+            "file": f
         }
         data = {
-            "model": "whisper-1",
-            "response_format": "json",
-            "language": "it"
+            "model": "whisper-1"
         }
 
         async with httpx.AsyncClient(timeout=120) as client:
             r = await client.post(
                 url,
                 headers=headers,
-                files=files,
-                data=data
-            )
+                data=data,
+                files=files
 
 
     os.unlink(tmp_path)
